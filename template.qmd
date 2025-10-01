@@ -1,33 +1,578 @@
 ---
-title: "MATH-517: Assignment x"
-author: "Your name"
-date: 'date of submission'
+title: "MATH-517: Assignment 3"
+author: "Noemi Ortona"
+date: '2025-09-05'
 format: pdf
 editor: visual
 ---
 
-## Theoretical exercise
+# 1. Theoretical exercise
 
-Your answer goes here
+## 1.1
 
-## Practical exercise
+In order to prove that the local linear regression estimator, $\hat{m}(x)$, belongs to the class of **linear smoothers**, we need to prove that the estimator can be written as a weighted average of the observations $Y_i$, where the weights $w_{ni}(x)$ depend on the predictor variables $X_i$, the target point $x$, the kernel function $K$, and the bandwidth $h$, but **not** on the response variables $Y_i$.
 
-Unless stated otherwise, your answer to the practical part should include the following elements:
+### The Minimization Problem
 
- - Description of the aim of the simulation study.
- - Description of the different quantities that intervene in your simulation study. Explain how these quantities (fixed or random) are defined and the reasoning behind the choices you made.
- - Description of your findings using appropriate graphics and/or tables (with a caption!) that are well commented in the text. 
- 
-The code should not appear in the PDF report, unless there is a specific reason to include it.
- 
+Let's start analyzing the function that we have to minimize in order to find the coefficients of the local linear regression estimator, $\hat{\beta}_0(x)$ and $\hat{\beta}_1(x)$.
+
+$$
+L(\beta_0, \beta_1) = \sum_{i=1}^{n} \left(Y_i - \beta_0 - \beta_1(X_i - x)\right)^2 K\left(\frac{X_i - x}{h}\right)
+$$
+
+-   The term $(Y_i - \beta_0 - \beta_1(X_i - x))$ is the residual for the $i$-th observation with respect to the local line at point $x$.
+-   The term $K\left(\frac{X_i - x}{h}\right)$ is the weight assigned by the kernel function. This weight is large when $X_i$ is "close" to $x$ and small when it is "far".
+
+### Deriving the Normal Equations
+
+To find the values of $\beta_0$ and $\beta_1$ that minimize $L$, we take the partial derivatives with respect to each parameter and set them to zero. For notational simplicity, let's define $k_i(x) = K\left(\frac{X_i - x}{h}\right)$.
+
+$$
+\frac{\partial L}{\partial \beta_0} = \sum_{i=1}^{n} -2 \left(Y_i - \beta_0 - \beta_1(X_i - x)\right) k_i(x) = 0
+$$
+
+$$
+\frac{\partial L}{\partial \beta_1} = \sum_{i=1}^{n} -2(X_i - x) \left(Y_i - \beta_0 - \beta_1(X_i - x)\right) k_i(x) = 0
+$$
+
+### Solving the System by Substitution
+
+To make the system more manageable, we use the following summary notations for the weighted sums:
+
+-   $S_0 = \sum_{i=1}^{n} k_i(x)$
+
+-   $S_1 = \sum_{i=1}^{n} (X_i - x) k_i(x)$
+
+-   $S_2 = \sum_{i=1}^{n} (X_i - x)^2 k_i(x)$
+
+-   $T_0 = \sum_{i=1}^{n} Y_i k_i(x)$
+
+-   $T_1 = \sum_{i=1}^{n} Y_i (X_i - x) k_i(x)$
+
+The system becomes:
+
+$$
+\begin{cases}
+\hat{\beta}_0 S_0 + \hat{\beta}_1 S_1 = T_0 \\
+\hat{\beta}_0 S_1 + \hat{\beta}_1 S_2 = T_1
+\end{cases}
+$$ $$
+\hat{\beta}_1 S_1 = T_0 - \hat{\beta}_0 S_0 \implies \hat{\beta}_1 = \frac{T_0 - \hat{\beta}_0 S_0}{S_1}
+$$ $$
+\hat{\beta}_0 S_1 + \left( \frac{T_0 - \hat{\beta}_0 S_0}{S_1} \right) S_2 = T_1
+$$\
+$$
+\hat{\beta}_0 S_1^2 + T_0 S_2 - \hat{\beta}_0 S_0 S_2 = T_1 S_1
+$$\
+$$
+\hat{\beta}_0 (S_1^2 - S_0 S_2) = T_1 S_1 - T_0 S_2
+$$\
+$$
+\hat{\beta}_0 = \frac{T_1 S_1 - T_0 S_2}{S_1^2 - S_0 S_2} = \frac{T_0 S_2 - T_1 S_1}{S_0 S_2 - S_1^2}
+$$
+
+### Expressing the Estimator as a Weighted Average
+
+Now that we have solved for $\hat{\beta}_0$, we substitute the definitions of $T_0$ and $T_1$ back into the solution:
+
+$$
+\hat{m}(x) = \hat{\beta}_0 = \frac{\left(\sum_{i=1}^{n} Y_i k_i(x)\right) S_2 - \left(\sum_{i=1}^{n} Y_i (X_i - x) k_i(x)\right) S_1}{S_0 S_2 - S_1^2}
+$$
+
+We can rewrite the numerator by factoring out $Y_i$ and $k_i(x)$:
+
+$$
+\hat{m}(x) = \sum_{i=1}^{n} Y_i \underbrace{\left[ \frac{k_i(x) \left(S_2 - (X_i - x) S_1\right)}{S_0 S_2 - S_1^2} \right]}_{w_{ni}(x)}
+$$
+
+As required, these weights **depend only on the target point** $x$, the data points $X_i$, the kernel function $K$, and the bandwidth $h$. They do **not** depend on the response values $Y_i$. This completes the proof that local linear regression is a **linear smoother**.
+
+## 1.2
+
+From the first part of the exercise, we derived the weight expression using the sum notation $S_k$, here we defined $S_k = \sum_{j=1}^{n} (X_j - x)^k K\left(\frac{X_j - x}{h}\right)$.\
+$$
+w_{ni}(x) = \frac{K\left(\frac{X_i - x}{h}\right) \left(S_2 - (X_i - x) S_1\right)}{S_0 S_2 - S_1^2} \quad (*),
+$$
+
+The new notation provided in the exercise is: $$
+S_{n,k}(x) = \frac{1}{nh}\sum_{i=1}^{n}(X_{i}-x)^{k}K\left(\frac{X_{i}-x}{h}\right)
+$$
+
+$$
+\implies \mathbf{S_k = nh \cdot S_{n,k}(x)}
+$$
+
+### Substitution into the Weight Expression
+
+We will now substitute this relationship into our original weight equation $(*)$. $$
+\frac{K\left(\frac{X_i - x}{h}\right) \left( (nh \cdot S_{n,2}(x)) - (X_i - x) (nh \cdot S_{n,1}(x)) \right)}{(nh \cdot S_{n,0}(x)) (nh \cdot S_{n,2}(x)) - (nh \cdot S_{n,1}(x))^2} 
+$$
+
+$$
+w_{ni}(x) = \frac{nh \cdot K\left(\frac{X_i - x}{h}\right) \left( S_{n,2}(x) - (X_i - x) S_{n,1}(x) \right)}{(nh)^2 \left( S_{n,0}(x) S_{n,2}(x) - S_{n,1}(x)^2 \right)} 
+$$\
+
+We can cancel the common factor $nh$ from the numerator and denominator. This leaves us with the final, explicit expression for the weights: $$
+w_{ni}(x) = \frac{1}{nh} \frac{K\left(\frac{X_i - x}{h}\right) \left( S_{n,2}(x) - (X_i - x) S_{n,1}(x) \right)}{S_{n,0}(x) S_{n,2}(x) - S_{n,1}(x)^2}
+$$
+
+## 1.3
+
+We need to prove that $\sum_{i=1}^{n} w_{ni}(x) = 1$, that is a property of any weighted average.
+
+The denominator, $S_0 S_2 - S_1^2$, is a constant with respect to the summation index $i$, so we can factor it out: $$
+\sum_{i=1}^{n} w_{ni}(x) = \frac{1}{S_0 S_2 - S_1^2} \sum_{i=1}^{n} \left[ K\left(\frac{X_i - x}{h}\right) \left(S_2 - (X_i - x) S_1\right) \right]
+$$ Let's expand the sum in the numerator by distributing the kernel term: $$
+\sum_{i=1}^{n} \left[ S_2 \cdot K\left(\frac{X_i - x}{h}\right) - S_1 \cdot (X_i - x) K\left(\frac{X_i - x}{h}\right) \right]
+$$ We can split this into two separate sums: $$
+= \sum_{i=1}^{n} S_2 \cdot K\left(\frac{X_i - x}{h}\right) - \sum_{i=1}^{n} S_1 \cdot (X_i - x) K\left(\frac{X_i - x}{h}\right)
+$$ Since $S_2$ and $S_1$ are also constants with respect to the index $i$, we can pull them out of their respective sums: $$
+= S_2 \left( \sum_{i=1}^{n} K\left(\frac{X_i - x}{h}\right) \right) - S_1 \left( \sum_{i=1}^{n} (X_i - x) K\left(\frac{X_i - x}{h}\right) \right)
+$$ Now, we can recognize the sums in the parentheses. By their very definition:
+
+-   $\sum_{i=1}^{n} K\left(\frac{X_i - x}{h}\right) = S_0$
+
+-   $\sum_{i=1}^{n} (X_i - x) K\left(\frac{X_i - x}{h}\right) = S_1$
+
+Substituting these back into our expression, the numerator becomes: $$
+S_2 \cdot S_0 - S_1 \cdot S_1 = S_0 S_2 - S_1^2
+$$
+
+We now place the simplified numerator back over the original denominator: $$
+\sum_{i=1}^{n} w_{ni}(x) = \frac{S_0 S_2 - S_1^2}{S_0 S_2 - S_1^2} = 1
+$$
+
+# 2. Practical exercise
+
+The goal is to perform a simulation study to assess the impact of some parameters/hyperparameters on the optimal bandwidth h_AMISE.
+
+## 2.1 How does h_AMISE behave when N grows? Can you explain why?
 
 ```{r}
 #| echo: false
 #| message: false
 #| warning: false
 
-# Your code goes here. 
-# The `echo: false` option disables the printing of code (only output is displayed).
-# The programming language can be changed to Python or Julia
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+
+# Set seed
+set.seed(953)
+
+# Define the true regression function m(x) 
+true_m <- function(x) {
+  sin(1 / (x / 3 + 0.1))
+}
+
+#Function to generate data
+# Generates n samples from Y = m(X) + epsilon, with X ~ Beta(alpha, beta) and epsilon ~ N(0, sigma_sq)
+generate_data <- function(n, alpha, beta, sigma_sq = 1) {
+  # Generate the covariate X from a Beta distribution
+  x <- rbeta(n, shape1 = alpha, shape2 = beta)
+  
+  # Generate the error epsilon from a Normal distribution
+  epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma_sq))
+  
+  # Calculate the response Y
+  y <- true_m(x) + epsilon
+  
+  # Return the data as a dataframe
+  return(data.frame(x = x, y = y))
+}
+
+
+#Function to find the optimal number of blocks 
+find_optimal_N <- function(sim_data, min_block_size = 20) {
+  n <- nrow(sim_data)
+  N_max <- max(min(floor(n / min_block_size), 5), 1) # N_max respects min_block_size
+  
+  if (N_max < 1) return(1) # Edge case for very small n
+  
+  rss_values <- numeric(N_max) #create a vector to save rrs_values
+  
+  for (N in 1:N_max) {
+    if (n / N < min_block_size && N > 1) {
+      rss_values[N] <- NA
+      next
+    }
+    
+    # Create the 'block' column. 
+    # If N=1, assign 1 to all rows --> every row has the exact same identifier 
+    sim_data_N <- sim_data %>% 
+      mutate(block = if (N > 1) cut(x, breaks = N, labels = FALSE, include.lowest = TRUE) else 1)
+    
+    # Calculate RSS for each block
+    #For the current block (.), it attempts to fit a linear model (lm) with a fourth-degree polynomial 
+    #If the fit fails (too few data points in the block), the program will store an error object (no stop)
+    #The sum of the RRS of the blocks at the end of each iteration is saved in the vector 'rss_values'
+    
+    rss_by_block <- sim_data_N %>%
+      group_by(block) %>%
+      do({
+        fit <- try(lm(y ~ poly(x, 4, raw = TRUE), data = .), silent = TRUE)
+        if (inherits(fit, "try-error")) { data.frame(rss = NA) } else { data.frame(rss = sum(residuals(fit)^2)) }
+      })
+    rss_values[N] <- sum(rss_by_block$rss, na.rm = TRUE)
+  }
+  
+  if(all(is.na(rss_values))) return(1)
+  
+  valid_indices <- which(!is.na(rss_values))
+  last_valid_N_max <- max(valid_indices)
+  
+  if ((n - 5 * last_valid_N_max) <= 0) return(1) 
+  rss_Nmax <- rss_values[last_valid_N_max]
+  
+  #Define a vector in which we save the Mallow's Cp for each N
+  cp_values <- (rss_values[valid_indices] / (rss_Nmax/ (n - 5 * last_valid_N_max))) - (n - 10 * valid_indices)
+  
+  # Find the index of the minimum Cp among the valid ones
+  best_index_in_valid_set <- which.min(cp_values)
+  
+  # Return the correct value of N
+  N_star <- valid_indices[best_index_in_valid_set]
+  
+  return(N_star)
+}
+
+estimate_parameters <- function(sim_data, N) {
+  n <- nrow(sim_data)
+  
+  #Estimate theta_22
+  #Divide the data into N blocks based on the value of x
+  sim_data_N <- sim_data %>% 
+    mutate(block = if (N > 1) cut(x, breaks = N, labels = FALSE, include.lowest = TRUE) else 1)
+  
+  #Function to calculate the squared second derivative:
+  get_m_double_prime_sq <- function(data_subset) {
+    # Fit the 4th-degree polynomial model.
+    fit <- try(lm(y ~ poly(x, 4, raw = TRUE), data = data_subset), silent = TRUE)
+    
+    # Error handling: if the fit fails, return NA
+    if (inherits(fit, "try-error") || length(coef(fit)) < 5) {
+      return(rep(NA, nrow(data_subset)))
+    }
+    
+    # Extract the five estimated coefficients (beta_0, beta_1, ...)
+    coeffs <- coef(fit)
+    
+    # Apply the formula for the second derivative of a quartic polynomial:
+    # m''(x) = 2*beta_2 + 6*beta_3*x + 12*beta_4*x^2
+    m_double_prime <- 2 * coeffs[3] + 6 * coeffs[4] * data_subset$x + 12 * coeffs[5] * data_subset$x^2
+    
+    # Return the square of this value (as required by the theta_22 formula)
+    return(m_double_prime^2)
+  }
+  
+  # Apply the helper function to each block of data
+  # 'group_map' creates a list where each element is the result for one block
+  # 'unlist' combines this list of vectors into a single large vector (inner sum of teh given formula)
+  m_double_prime_sq_values <- unlist(
+    sim_data_N %>% group_by(block) %>% group_map(~ get_m_double_prime_sq(.x))
+  )
+  
+  # Calculate theta_22 by taking the mean of all the squared second derivative values
+  # Theta_22 = (1/n) * sum(m''(xi)^2)
+  theta_22_hat <- mean(m_double_prime_sq_values, na.rm = TRUE)
+  
+  #Estimate sigma_sq
+  # We re-calculate the RSS for the chosen number of blocks, N.
+  rss_by_block <- sim_data_N %>%
+    group_by(block) %>%
+    do({
+      fit <- try(lm(y ~ poly(x, 4, raw = TRUE), data = .), silent = TRUE)
+      if (inherits(fit, "try-error")) { data.frame(rss = NA) } else { data.frame(rss = sum(residuals(fit)^2)) }
+    })
+  rss_N <- sum(rss_by_block$rss, na.rm = TRUE)
+  
+  # Calculate sigma^2 using the RSS (as in the formula)
+  if ((n - 5 * N) <= 0) {
+    sigma_sq_hat <- NA
+  } else {
+    sigma_sq_hat <- rss_N / (n - 5 * N)
+  }
+  
+  #Return all estimated parameters in a list
+  return(list(
+    sigma_sq_hat = sigma_sq_hat,
+    theta_22_hat = theta_22_hat,
+    RSS = rss_N
+  ))
+}
+```
+
+To answer this question, we must understand how the block size $N$ influences the estimation of the unknown quantities $\sigma^2$ and $\theta_{22}$. The parameter $N$ controls the complexity of the model used to estimate these quantities.
+
+A larger value of $N$ means the data is split into more, smaller blocks. Within each small block, the fitted quartic polynomial will adapt more closely to the local data points, resulting in a more flexible overall model. This increased flexibility leads to larger values for the estimated second derivatives, $\hat{m}_j''(x)$.
+
+Since $\hat{\theta}_{22}$ is calculated as the average of the squared second derivatives, a more wiggly model (larger $N$) will produce a larger $\hat{\theta}_{22}$.
+
+Looking at the formula for $h_{AMISE}$:
+
+$$h_{AMISE} = n^{-1/5}\left(\frac{35\sigma^2|\text{supp}(X)|}{\theta_{22}}\right)^{1/5}$$
+
+we can see that $\theta_{22}$ is in the denominator. Therefore, as$N$ increases, $\hat{\theta}_{22}$ increases, and consequently the estimated $h_{AMISE}$ decreases.
+
+To verify this, we run a single simulation with a large sample size (n=2000) and calculate the estimated $h_{AMISE}$ for each possible value of $N$ from 1 to $N_{max}$.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Function to calculate h_AMISE for each potential N
+analyze_h_vs_N <- function(n, alpha, beta, sigma2) {
+  sim_data <- generate_data(n = n, alpha = alpha, beta = beta, sigma_sq = sigma2) %>% arrange(x)
+  N_max <- max(min(floor(n / 20), 5), 1)
+  h_results <- vector("list", N_max)
+  
+  for (N in 1:N_max) {
+    params <- estimate_parameters(sim_data, N) # Estimate parameters for the current N
+    
+    if(is.na(params$theta_22_hat) || params$theta_22_hat == 0 || is.na(params$sigma_sq_hat)) {
+      h_amise_N <- NA
+    } else {
+      h_amise_N <- (n^(-1/5)) * ((35 * params$sigma_sq_hat) / abs(params$theta_22_hat))^(1/5)
+    }
+    h_results[[N]] <- data.frame(N = N, h_amise_at_N = h_amise_N)
+  }
+  return(bind_rows(h_results))
+}
+
+# Run the analysis for a large dataset (n=2000)
+h_vs_N_data <- analyze_h_vs_N(n = 2000, alpha = 2, beta = 5, sigma2 = 1)
+
+# Plot the results
+plot_h_vs_N <- ggplot(h_vs_N_data, aes(x = N, y = h_amise_at_N)) +
+  geom_line(linewidth = 1, color = "purple") +
+  geom_point(size = 4, color = "purple") +
+  labs(
+    title = "Behavior of h_AMISE as N Grows",
+    x = "Number of Blocks (N)",
+    y = "Estimated h_AMISE"
+  ) +
+  scale_x_continuous(breaks = 1:max(h_vs_N_data$N, na.rm=TRUE)) +
+  theme_minimal()
+
+print(plot_h_vs_N)
+```
+
+**Findings:** The plot above confirms our theoretical expectation. The estimated value of $h_{AMISE}$ is a decreasing function of the number of blocks, $N$, used for the pilot estimation.
+
+## Should $N$ depend on $n$? Why?
+
+Yes, the optimal choice of $N$ **must depend on** $n$. This is a **bias-variance trade-off**.
+
+-   **Small** $n$: With a small sample size, using a large $N$ would result in very few data points per block. This would make the polynomial fit in each block highly unstable and variable. To control this high variance, a smaller $N$ is preferred.
+
+-   **Large** $n$: With a large sample size, we can afford to use a larger $N$. Each block will still contain enough data for a stable fit. A larger $N$ allows the pilot model to be more flexible and capture the local features of the true regression function $m(x)$ more accurately, leading to a less biased estimate of $\theta_{22}$.
+
+To demonstrate this relationship empirically, we conduct a comprehensive simulation study:
+
+1.  **Define a Range of Sample Sizes:** We test a series of datasets with increasing sample sizes ($n$). Specifically, we start with $n=200$ and increase the sample size in steps of 200 until we reach $n=3000$.
+
+-   **Perform Multiple Replications:** For each single sample size $n$, we generate **200 different, independent datasets**. This step is crucial because the optimal $N$ found for any single dataset can be influenced by the specific random sample of data points. By running 200 trials for the same $n$, we can average out this randomness.
+
+-   **Find the Optimal** $N$**:** In each of these trials, we apply the `find_optimal_N` function to determine the $N_{opt}$ that minimizes Mallows's $C_{p}$​ for that specific dataset.
+
+-   **Average the Results:** After completing the 200 trials for a given $n$, we calculate the **average of the 200** $N_{opt}$**values** found (the average is a relaiable estimate of the best number of blocks for that sample size)
+
+-   **Visualize the Trend:** We plot these averaged values against their corresponding sample sizes
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Vector of sample sizes to test
+n_values <- seq(200, 3000, by = 200)
+# Number of replications for each n to average out randomness
+N_REPLICATIONS <- 200
+
+# Fixed parameters for the Beta distribution
+ALPHA <- 2
+BETA <- 5
+
+results_list <- list()
+
+# OUTER LOOP: iterates over each value of n
+for (n_i in n_values) {
+  
+  # Vector to store the results of each replication for the current n
+  n_opt_replicates <- numeric(N_REPLICATIONS)
+  
+  # INNER LOOP: runs the simulation multiple times for the same n
+  for (rep in 1:N_REPLICATIONS) {
+    # 1. Generate data
+    sim_data <- generate_data(n = n_i, alpha = ALPHA, beta = BETA) %>% arrange(x)
+    
+    # 2. Find the optimal N for this specific dataset
+    N_opt <- find_optimal_N(sim_data)
+    
+    # 3. Store the result of this replication
+    n_opt_replicates[rep] <- N_opt
+  }
+  
+  # Calculate the average of the results for the current n
+  average_n_opt <- mean(n_opt_replicates, na.rm = TRUE)
+  
+  # Add the averaged result for this n_i to the list
+  results_list[[length(results_list) + 1]] <- data.frame(
+    n = n_i,
+    avg_N_opt = average_n_opt
+  )
+}
+
+#Combine all results into a dataframe
+results_averaged <- bind_rows(results_list)
+
+# Plot: Average Optimal N vs. n
+plot_N_vs_n <- ggplot(results_averaged, aes(x = n, y = avg_N_opt)) +
+  geom_line(color="darkgreen", linewidth = 1.2) +
+  geom_point(color="darkgreen", size = 3) +
+  labs(title = "Average Optimal N vs. Sample Size (n)",
+       subtitle = paste("Based on", N_REPLICATIONS, "replications per point"),
+       x = "Sample Size (n)",
+       y = "Average Optimal Number of Blocks (N_opt)") +
+  theme_minimal()
+
+print(plot_N_vs_n) 
+```
+
+**Findings:** The plot clearly shows an increasing relationship. As the sample size $n$ grows, the optimal number of blocks $N$ chosen by Mallows's $C_p$ also tends to increase.
+
+From the graph, we notice that the optimal number of blocks grows quickly at first; this is because for smaller sample sizes, increasing $N$ from one to two provides a large reduction in bias that strongly outweighs the Mallows's $C_{p}$​penalty for the added model complexity
+
+## What happens when the number of observations varies a lot between different regions in the support of X? How is this linked to the parameters of the Beta distribution?
+
+The number of observations in different regions is determined by the probability density function $f_{X​}(x)$ of the covariate.
+
+This density has a significant and direct impact on $\theta_{22}$ , that is inversely proportional to global optimal bandwidth $h_{AMISE}$​
+
+$$
+θ_{22}​=∫{m′′(x)}^2f_{X}​(x)dx
+$$
+
+This is not a simple average of the squared curvature, but a weighted average, where the weights are the density values $f_{X​}(x)$ themselves. This means that regions where data is dense (high $f_{X​}(x)$) contribute far more to the final value $\theta_{22}$ than regions where data is sparse.
+
+The parameters $\alpha$ and $\beta$ of the Beta distribution are known as shape parameters; their values and their relationship to each other entirely determine the shape of the distribution's density curve.
+
+To analise this, for each shape (e.g., Uniform, Unimodal), we perform 200 replications; in each replication, a new random sample of 500 points is generated, and its corresponding optimal $h_{AMISE}$ is calculated. This process yields a collection of 200 $h_{AMISE}$ values for each distribution type. We then use a boxplot to visualize these collections, to compare the median bandwidth and the overall variability of the estimates for each scenario.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 7
+
+beta_params <- list(
+  "Uniform (a=1, b=1)" = c(1, 1), 
+  "Unimodal (a=5, b=5)" = c(5, 5), 
+  "U-shaped (a=0.5, b=0.5)" = c(0.5, 0.5), 
+  "Asymmetric (a=5, b=2)" = c(5, 2)
+)
+n_fixed <- 500
+results_dist_list <- list()
+
+for (name in names(beta_params)) {
+  params_beta <- beta_params[[name]]
+  for (rep in 1:N_REPLICATIONS) {
+    # <<< Logic from run_simulation_step is now integrated here >>>
+    sim_data <- generate_data(n = n_fixed, alpha = params_beta[1], beta = params_beta[2], sigma_sq = 1) %>% arrange(x)
+    N_star <- find_optimal_N(sim_data)
+    if (is.na(N_star)) {
+      h_amise <- NA
+    } else {
+      params <- estimate_parameters(sim_data, N_star)
+      if(is.na(params$theta_22_hat) || params$theta_22_hat == 0 || is.na(params$sigma_sq_hat)) {
+        h_amise <- NA
+      } else {
+        h_amise <- (n_fixed^(-1/5)) * ((35 * params$sigma_sq_hat) / abs(params$theta_22_hat))^(1/5)
+      }
+    }
+    results_dist_list[[length(results_dist_list) + 1]] <- data.frame(distribution = name, h_amise = h_amise)
+  }
+}
+
+results_dist_df <- bind_rows(results_dist_list) %>% filter(!is.na(h_amise))
+
+results_dist_df$distribution <- factor(results_dist_df$distribution, levels = names(beta_params))
+plot_h_vs_dist <- ggplot(results_dist_df, aes(x = distribution, y = h_amise, fill = distribution)) +
+  geom_boxplot() +
+  labs(title = paste("Impact of n° of observations in different regions on h_AMISE"), 
+       x = "Distribution of X", 
+       y = "Estimated Optimal Bandwidth") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 10, hjust = 1))
+print(plot_h_vs_dist)
+```
+
+From the box-plots we can observe that:
+
+-   The **Uniform** (`a=1, b=1`) and **U-shaped** (`a=0.5, b=0.5`) distributions both result in very small median values for $h_{AMISE}$ . This suggests that in the regions where these distributions have high data density (across the whole support for Uniform, and at the edges for U-shaped), the function's curvature $m''(x)$ is relatively high. The algorithm detects this high "wiggliness" in the data-rich regions, leading to a large $\theta_{22}$ and thus a small $h_{AMISE}$ to capture these details.
+
+-   The **Unimodal** (`a=5, b=5`) distribution, which concentrates data in the center of the support, results in a noticeably larger median bandwidth. This implies that in the central region (around x=0.5), the true function $m(x)$ is relatively smooth (has low curvature). Because most of the data is in this smooth region, the weighted average $\theta_{22}$​ is smaller, leading the algorithm to select a larger bandwidth.
+
+-   The **Asymmetric** (`a=5, b=2`) distribution produces the highest median bandwidth and the **highest variance**. This distribution concentrates data on the right side of the support. The large bandwidth suggests that the function is smoothest in this data-rich region.
+
+    The high variance indicates that the estimation of $h_{AMISE}$ is unstable under this condition. This happens because the algorithm gets conflicting information: it sees a smooth function where data is plentiful but must also account for the sparse, potentially more complex regions, leading to inconsistent estimates across different random samples.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 9
+
+# Create a sequence of 500 points on the x-axis between 0 and 1
+x_values <- seq(0, 1, length.out = 500)
+
+# Create a dataframe with the x and y values
+function_data <- data.frame(
+  x = x_values,
+  y = true_m(x_values)
+)
+
+# Draw the function plot
+plot_function <- ggplot(function_data, aes(x = x, y = y)) +
+  geom_line(color = "navy", linewidth = 1.2) +
+  labs(
+    title = "Plot of the Function",
+    x = "x",
+    y = "f(x)"
+  ) +
+  theme_minimal()
+
+# --- Plot 2: Beta Distribution Densities ---
+
+# Create a dataframe for the densities
+density_data <- data.frame(x = x_values) %>%
+  mutate(
+    `Uniform (a=1, b=1)` = dbeta(x, 1, 1),
+    `Unimodal (a=5, b=5)` = dbeta(x, 5, 5),
+    `U-shaped (a=0.5, b=0.5)` = dbeta(x, 0.5, 0.5),
+    `Asymmetric (a=5, b=2)` = dbeta(x, 5, 2)
+  ) %>%
+  tidyr::pivot_longer(
+    cols = -x,
+    names_to = "Distribution",
+    values_to = "Density"
+  )
+
+# Draw the density plot
+plot_densities <- ggplot(density_data, aes(x = x, y = Density, color = Distribution)) +
+  geom_line(linewidth = 1.2) +
+  labs(
+    title = "Densities of the Different Beta Distributions",
+    x = "x",
+    y = "Density"
+  ) +
+  scale_y_continuous(limits = c(0, 4)) + 
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# --- Combine the two plots ---
+grid.arrange(plot_function, plot_densities, nrow = 2)
 
 ```
