@@ -313,7 +313,7 @@ Looking at the formula for $h_{AMISE}$:
 
 $$h_{AMISE} = n^{-1/5}\left(\frac{35\sigma^2|\text{supp}(X)|}{\theta_{22}}\right)^{1/5}$$
 
-we can see that $\theta_{22}$ is in the denominator. Therefore, as$N$ increases, $\hat{\theta}_{22}$ increases, and consequently the estimated $h_{AMISE}$ decreases.
+we can see that $\theta_{22}$ is in the denominator. Therefore, as $N$ increases, $\hat{\theta}_{22}$ increases, and consequently the estimated $h_{AMISE}$ decreases.
 
 To verify this, we run a single simulation with a large sample size (n=2000) and calculate the estimated $h_{AMISE}$ for each possible value of $N$ from 1 to $N_{max}$.
 
@@ -341,25 +341,51 @@ analyze_h_vs_N <- function(n, alpha, beta, sigma2) {
   return(bind_rows(h_results))
 }
 
-# Run the analysis for a large dataset (n=2000)
-h_vs_N_data <- analyze_h_vs_N(n = 2000, alpha = 2, beta = 5, sigma2 = 1)
+#Beta parameters to test
+beta_params_to_test <- list(
+  "Asymmetric (a=2, b=5)" = c(alpha=2, beta=5),
+  "Uniform (a=1, b=1)" = c(alpha=1, beta=1),
+  "U-shaped (a=0.5, b=0.5)" = c(alpha=0.5, beta=0.5),
+  "Unimodal (a=5, b=5)" = c(alpha=5, beta=5)
+)
+
+# Fixed parameters
+N_SAMPLE <- 2000
+SIGMA2 <- 1
+
+all_results_list <- list()
+
+# Test for each beta parameters and save the results in the list
+for (dist_name in names(beta_params_to_test)) {
+  params <- beta_params_to_test[[dist_name]]
+  h_vs_N_data <- analyze_h_vs_N(n = N_SAMPLE, alpha = params["alpha"], beta = params["beta"], sigma2 = SIGMA2)
+  h_vs_N_data$distribution <- dist_name
+  all_results_list[[dist_name]] <- h_vs_N_data
+}
+
+# Combine in a dataframe
+combined_h_data <- bind_rows(all_results_list)
 
 # Plot the results
-plot_h_vs_N <- ggplot(h_vs_N_data, aes(x = N, y = h_amise_at_N)) +
-  geom_line(linewidth = 1, color = "purple") +
-  geom_point(size = 4, color = "purple") +
+plot_h_vs_N_combined <- ggplot(combined_h_data, aes(x = N, y = h_amise_at_N, color = distribution, group = distribution)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
   labs(
-    title = "Behavior of h_AMISE as N Grows",
+    title = "Behavior of h_AMISE as N Grows (fro diferent X distributions",
     x = "Number of Blocks (N)",
-    y = "Estimated h_AMISE"
+    y = "Estimated h_AMISE",
+    color = "X distribution"
   ) +
-  scale_x_continuous(breaks = 1:max(h_vs_N_data$N, na.rm=TRUE)) +
-  theme_minimal()
+  scale_x_continuous(breaks = 1:max(combined_h_data$N, na.rm=TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-print(plot_h_vs_N)
+print(plot_h_vs_N_combined)
 ```
 
 **Findings:** The plot above confirms our theoretical expectation. The estimated value of $h_{AMISE}$ is a decreasing function of the number of blocks, $N$, used for the pilot estimation.
+
+Depending on how the the number of observations varies between different regions $h_{\text{AMISE}}$ decrease differently, but decreases anyway.
 
 ## Should $N$ depend on $n$? Why?
 
@@ -371,7 +397,7 @@ Yes, the optimal choice of $N$ **must depend on** $n$. This is a **bias-variance
 
 To demonstrate this relationship empirically, we conduct a comprehensive simulation study:
 
-1.  **Define a Range of Sample Sizes:** We test a series of datasets with increasing sample sizes ($n$). Specifically, we start with $n=200$ and increase the sample size in steps of 200 until we reach $n=3000$.
+-   **Define a Range of Sample Sizes:** We test a series of datasets with increasing sample sizes ($n$). Specifically, we start with $n=200$ and increase the sample size in steps of 200 until we reach $n=3000$.
 
 -   **Perform Multiple Replications:** For each single sample size $n$, we generate **200 different, independent datasets**. This step is crucial because the optimal $N$ found for any single dataset can be influenced by the specific random sample of data points. By running 200 trials for the same $n$, we can average out this randomness.
 
@@ -511,13 +537,11 @@ print(plot_h_vs_dist)
 
 From the box-plots we can observe that:
 
--   The **Uniform** (`a=1, b=1`) and **U-shaped** (`a=0.5, b=0.5`) distributions both result in very small median values for $h_{AMISE}$ . This suggests that in the regions where these distributions have high data density (across the whole support for Uniform, and at the edges for U-shaped), the function's curvature $m''(x)$ is relatively high. The algorithm detects this high "wiggliness" in the data-rich regions, leading to a large $\theta_{22}$ and thus a small $h_{AMISE}$ to capture these details.
+-   The **Uniform** (`a=1, b=1`) and **U-shaped** (`a=0.5, b=0.5`) distributions have very small median values for $h_{AMISE}$ . This suggests that in the regions where these distributions have high data density (across the whole support for Uniform, and at the edges for U-shaped), the function's curvature $m''(x)$ is relatively high. The algorithm detects this high "wiggliness" in the data-rich regions, leading to a large $\theta_{22}$ and thus a small $h_{AMISE}$ to capture these details.
 
--   The **Unimodal** (`a=5, b=5`) distribution, which concentrates data in the center of the support, results in a noticeably larger median bandwidth. This implies that in the central region (around x=0.5), the true function $m(x)$ is relatively smooth (has low curvature). Because most of the data is in this smooth region, the weighted average $\theta_{22}$​ is smaller, leading the algorithm to select a larger bandwidth.
+-   The **Unimodal** (`a=5, b=5`) distribution, which concentrates data in the center of the support, have a larger median bandwidth. This implies that in the central region (around x=0.5), the true function $m(x)$ is relatively smooth (has low curvature). Because most of the data is in this smooth region, the weighted average $\theta_{22}$​ is smaller, leading the algorithm to select a larger bandwidth.
 
--   The **Asymmetric** (`a=5, b=2`) distribution produces the highest median bandwidth and the **highest variance**. This distribution concentrates data on the right side of the support. The large bandwidth suggests that the function is smoothest in this data-rich region.
-
-    The high variance indicates that the estimation of $h_{AMISE}$ is unstable under this condition. This happens because the algorithm gets conflicting information: it sees a smooth function where data is plentiful but must also account for the sparse, potentially more complex regions, leading to inconsistent estimates across different random samples.
+-   The **Asymmetric** (`a=5, b=2`) distribution produces the highest median bandwidth and the **highest variance**. This distribution concentrates data on the right side of the support. The large bandwidth suggests that the function is smoothest in this data-rich region. The high variance indicates that the estimation of $h_{AMISE}$ is unstable under this condition. This happens because the algorithm gets conflicting information: it sees a smooth function where data is plentiful but must also account for the sparse, potentially more complex regions, leading to inconsistent estimates across different random samples.
 
 ```{r}
 #| echo: false

@@ -168,22 +168,65 @@ analyze_h_vs_N <- function(n, alpha, beta, sigma2) {
   return(bind_rows(h_results))
 }
 
-# Run the analysis for a large dataset (n=2000)
-h_vs_N_data <- analyze_h_vs_N(n = 2000, alpha = 2, beta = 5, sigma2 = 1)
+#Beta parameters to test
+beta_params_to_test <- list(
+  "Asymmetric (a=2, b=5)" = c(alpha=2, beta=5),
+  "Uniform (a=1, b=1)" = c(alpha=1, beta=1),
+  "U-shaped (a=0.5, b=0.5)" = c(alpha=0.5, beta=0.5),
+  "Unimodal (a=5, b=5)" = c(alpha=5, beta=5)
+)
+
+# Fixed parameters
+N_SAMPLE <- 2000
+SIGMA2 <- 1
+
+all_results_list <- list()
+
+# Test for each beta parameters and save the results in the list
+for (dist_name in names(beta_params_to_test)) {
+  params <- beta_params_to_test[[dist_name]]
+  h_vs_N_data <- analyze_h_vs_N(n = N_SAMPLE, alpha = params["alpha"], beta = params["beta"], sigma2 = SIGMA2)
+  h_vs_N_data$distribution <- dist_name
+  all_results_list[[dist_name]] <- h_vs_N_data
+}
+
+# Combine in a dataframe
+combined_h_data <- bind_rows(all_results_list)
 
 # Plot the results
-plot_h_vs_N <- ggplot(h_vs_N_data, aes(x = N, y = h_amise_at_N)) +
-  geom_line(linewidth = 1, color = "purple") +
-  geom_point(size = 4, color = "purple") +
+plot_h_vs_N_combined <- ggplot(combined_h_data, aes(x = N, y = h_amise_at_N, color = distribution, group = distribution)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
   labs(
-    title = "Behavior of h_AMISE as N Grows",
+    title = "Behavior of h_AMISE as N Grows (fro diferent X distributions",
     x = "Number of Blocks (N)",
-    y = "Estimated h_AMISE"
+    y = "Estimated h_AMISE",
+    color = "X distribution"
   ) +
-  scale_x_continuous(breaks = 1:max(h_vs_N_data$N, na.rm=TRUE)) +
-  theme_minimal()
+  scale_x_continuous(breaks = 1:max(combined_h_data$N, na.rm=TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-print(plot_h_vs_N)
+print(plot_h_vs_N_combined)
+
+# Function to calculate h_AMISE for each potential N
+analyze_h_vs_N <- function(n, alpha, beta, sigma2) {
+  sim_data <- generate_data(n = n, alpha = alpha, beta = beta, sigma_sq = sigma2) %>% arrange(x)
+  N_max <- max(min(floor(n / 20), 5), 1)
+  h_results <- vector("list", N_max)
+  
+  for (N in 1:N_max) {
+    params <- estimate_parameters(sim_data, N) # Estimate parameters for the current N
+    
+    if(is.na(params$theta_22_hat) || params$theta_22_hat == 0 || is.na(params$sigma_sq_hat)) {
+      h_amise_N <- NA
+    } else {
+      h_amise_N <- (n^(-1/5)) * ((35 * params$sigma_sq_hat) / abs(params$theta_22_hat))^(1/5)
+    }
+    h_results[[N]] <- data.frame(N = N, h_amise_at_N = h_amise_N)
+  }
+  return(bind_rows(h_results))
+}
 
 #---------------------------------------------------------------
 #Should N depend on n? Why?
