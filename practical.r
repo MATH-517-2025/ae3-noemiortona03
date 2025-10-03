@@ -209,25 +209,6 @@ plot_h_vs_N_combined <- ggplot(combined_h_data, aes(x = N, y = h_amise_at_N, col
 
 print(plot_h_vs_N_combined)
 
-# Function to calculate h_AMISE for each potential N
-analyze_h_vs_N <- function(n, alpha, beta, sigma2) {
-  sim_data <- generate_data(n = n, alpha = alpha, beta = beta, sigma_sq = sigma2) %>% arrange(x)
-  N_max <- max(min(floor(n / 20), 5), 1)
-  h_results <- vector("list", N_max)
-  
-  for (N in 1:N_max) {
-    params <- estimate_parameters(sim_data, N) # Estimate parameters for the current N
-    
-    if(is.na(params$theta_22_hat) || params$theta_22_hat == 0 || is.na(params$sigma_sq_hat)) {
-      h_amise_N <- NA
-    } else {
-      h_amise_N <- (n^(-1/5)) * ((35 * params$sigma_sq_hat) / abs(params$theta_22_hat))^(1/5)
-    }
-    h_results[[N]] <- data.frame(N = N, h_amise_at_N = h_amise_N)
-  }
-  return(bind_rows(h_results))
-}
-
 #---------------------------------------------------------------
 #Should N depend on n? Why?
         
